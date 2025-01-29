@@ -11,11 +11,16 @@ class MLP(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.fc1=torch.nn.Linear(1, M) # couche cachée
+        self.fc1_bis=torch.nn.Linear(M, M) # couche cachée
         self.fc2=torch.nn.Linear(M, 1)
 
     def forward(self, x):
-        x = torch.functional.F.relu(self.fc1(x))
-        return self.fc2(x)
+        y = self.fc1(x)
+        y = torch.functional.F.relu(y)
+        y = self.fc1_bis(y)
+        y = torch.functional.F.relu(y)
+        y = self.fc2(y)
+        return y
 
 model = MLP()
 
@@ -45,7 +50,7 @@ class My_Dataset(Dataset):
     self.data_y = np.float32(y)
     self.N = N
 
-  def __len__(self):
+  def __len__(self): # len = length
     return self.N
 
   def __getitem__(self, index):

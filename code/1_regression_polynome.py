@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+
 #%% Générer les données
 N = 30 # nombre de points
 x = np.random.uniform(0, 1, size=N)
@@ -10,8 +11,9 @@ y = np.sin(2 * np.pi * x) + np.random.normal(scale=.1, size=N)
 plt.plot(x, y, 'o')
 plt.xlabel('x')
 plt.ylabel('y')
-plt.title(f'N={N}')
+plt.title('N=%i' % N)
 plt.show()
+
 
 #%% convertir données (numpy -> pytorch)
 import torch
@@ -31,6 +33,7 @@ def get_predict(x, coefs):
 # fonction coût
 def get_loss(y_predict):
   return ((y_predict - y)**2).mean()
+
 
 #%% descente de gradient
 lr = .5 # learning rate
