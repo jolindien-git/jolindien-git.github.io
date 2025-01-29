@@ -5,14 +5,14 @@ from matplotlib import pyplot as plt
 
 
 #%% implementation MLP
-M = 64 # taille couche cachée
+M = 100 # taille couche cachée
 
 class MLP(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1=torch.nn.Linear(1, M) # couche cachée
+        self.fc1=torch.nn.Linear(2, M) # couche cachée
         self.fc1_bis=torch.nn.Linear(M, M) # couche cachée
-        self.fc2=torch.nn.Linear(M, 1)
+        self.fc2=torch.nn.Linear(M, 2)
 
     def forward(self, x):
         y = self.fc1(x)
@@ -30,7 +30,9 @@ print(list(model.parameters()))
 
 
 #%% implémenter data sets
-N_TRAIN = 200
+N_TRAIN = 2000
+N_VALID = 500
+BATCH_SIZE = 100
 
 class My_Dataset(Dataset):
   '''
@@ -43,8 +45,11 @@ class My_Dataset(Dataset):
   '''
   def __init__(self, N = 100):
     # génerer données
-    x = np.random.uniform(0, 1, size=(N, 1))
-    y = np.sin(2 * np.pi * x) + np.random.normal(scale=.1, size=(N, 1))
+    x = np.random.uniform(low=[-1, 1], high=[1, 4], size=(N, 2))
+    y = np.zeros_like(x)
+    x1, x2 = x[:, 0], x[:, 1]
+    y[:, 0] = np.sqrt(x1 + x2)
+    y[:, 1] = x2**3
     # mémoriser (le MLP nécessite des float sur 32 bits)
     self.data_x = np.float32(x)
     self.data_y = np.float32(y)
@@ -59,9 +64,9 @@ class My_Dataset(Dataset):
 
 # train set, with mini-batch
 train_data = My_Dataset(N_TRAIN)
-train_loader = DataLoader(train_data, batch_size=10, shuffle=True)
+train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
 
-valid_data = My_Dataset(50)
+valid_data = My_Dataset(N_VALID)
 valid_loader = DataLoader(valid_data, batch_size=len(valid_data))
 
 # test
@@ -70,35 +75,41 @@ print("échantillon : x, y = ", train_data[0]) # utilise __getitem__
 
 
 #%% entrainement du MLP
-LEARNING_RATE = 1e-1
-EPOCHS = 2000
+LEARNING_RATE = 1e-3
+EPOCHS = 500
 optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)
 
+train_losses, valid_losses = [], [] # for each epoch
 for epoch in range(EPOCHS):
     # entrainement
-    train_losses = []
+    losses = []
     for x, y in train_loader:
         # evaluer fonction cout
         y_predict = model(x)
         loss = ((y_predict - y)**2).mean()
-        train_losses.append(loss.item())
+        losses.append(loss.item())
 
         # mise à jour paramètre
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+    train_loss = np.mean(losses)
+    train_losses.append(train_loss)
+    
     # vaidation
     with torch.no_grad(): # pas besoin de calcul de gradient
-        for i, (x, y) in enumerate(valid_loader):
-            assert(i == 0) # une seule boucle (pas de mini-batch)
-            y_predict = model(x)
-            valid_loss = ((y_predict - y)**2).mean().item()
+        x, y = list(valid_loader)[0]
+        y_predict = model(x)
+        valid_loss = ((y_predict - y)**2).mean().item()
+        valid_losses.append(valid_loss)
     if epoch % 10 == 0:
-      print('epoch %i train %.2e  valid %.2e' % (epoch, np.mean(train_losses),
-                                                 valid_loss))
+      print('epoch %i train %.2e  valid %.2e' % (epoch, train_loss, valid_loss))
+    if epoch == EPOCHS // 4:
+        print("decrease lr")
+        optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE / 4)
 
-# visualiser résultat
-plt.plot(x.numpy(), y.numpy(), 'o', x.numpy(), y_predict.numpy(), 'o')
-plt.title('M=%i epochs=%i LR=%.2e' % (M, EPOCHS, LEARNING_RATE))
-plt.legend(['data valid', 'MLP'])
+
+#%% visualiser progression loss (train vs valid)
+plt.semilogy(train_losses)
+plt.semilogy(valid_losses)
+plt.legend(['train loss', 'valid loss'])
