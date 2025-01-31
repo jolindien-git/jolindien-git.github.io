@@ -110,6 +110,14 @@ for epoch in range(EPOCHS):
 
 
 #%% visualiser progression loss (train vs valid)
+plt.plot(train_losses)
+plt.plot(valid_losses)
+plt.legend(['train loss', 'valid loss'])
+plt.xlabel('epoch')
+plt.show()
+
 plt.semilogy(train_losses)
 plt.semilogy(valid_losses)
 plt.legend(['train loss', 'valid loss'])
+plt.xlabel('epoch')
+plt.show()
