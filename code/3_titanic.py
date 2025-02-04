@@ -208,10 +208,10 @@ for epoch in range(EPOCHS):
       print('epoch %i train %.2e %.2f  valid %.2e %.2f' % 
             (epoch, train_loss, train_score, valid_loss, valid_score))
      
-    if epoch > 0 and epoch % 100 == 0:
-        lr /= 2
-        print("decrease lr %.2e" % lr)
-        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    # if epoch > 0 and epoch % 100 == 0:
+    #     lr /= 2
+    #     print("decrease lr %.2e" % lr)
+    #     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
 
 # visualiser progression loss (train vs valid)
