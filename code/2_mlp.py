@@ -46,7 +46,7 @@ class My_Dataset(Dataset):
   def __init__(self, N = 100):
     # génerer données
     x = np.random.uniform(low=[-1, 1], high=[1, 4], size=(N, 2))
-    y = np.zeros_like(x)
+    y = np.zeros((N,2))
     x1, x2 = x[:, 0], x[:, 1]
     y[:, 0] = np.sqrt(x1 + x2)
     y[:, 1] = x2**3
