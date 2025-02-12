@@ -9,6 +9,7 @@ FILE_NAME = "titanic.csv"
 
 # lecture fichier
 data_array = np.loadtxt(FILE_NAME, delimiter=",")
+np.random.shuffle(data_array) # mélange les données
 
 rows, cols = data_array.shape
 
@@ -70,7 +71,6 @@ plt.show()
 #%% datasets
 BATCH_SIZE = 32
 
-np.random.shuffle(data_array) # mélange les données
 
 class Titanic_Dataset(Dataset):
 
