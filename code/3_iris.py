@@ -57,7 +57,7 @@ print(corr_matrix)
 
 fig, ax = plt.subplots()
 im = ax.imshow(corr_matrix, cmap="coolwarm")
-ax.xaxis.set(ticks=np.arange(nb), ticklabels=("sepal length", "sepal width", "petal length", "petal width", "iris class"))
+ax.xaxis.set(ticks=np.arange(nb), ticklabels=("sepal l", "sepal w", "petal l", "petal w", "iris class"))
 ax.yaxis.set(ticks=np.arange(nb), ticklabels=("sepal length", "sepal width", "petal length", "petal width", "iris class"))
 cbar = ax.figure.colorbar(im, ax=ax, format='% .2f')
 for i in range(nb):
