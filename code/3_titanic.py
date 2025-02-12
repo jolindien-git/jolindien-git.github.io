@@ -40,7 +40,6 @@ print("fare: min %.3f  max % .3f écart-type  %.3f" %
 # correlation entre 2 grandeurs
 x, y = p_id, survived
 corr_matrix = np.corrcoef(x, y)
-np.cov
 print(corr_matrix)
 
 def get_pearson_coeff(x, y):
