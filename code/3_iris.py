@@ -142,7 +142,7 @@ def get_valid_loss(model, verbose=False):
 
 #%% MLP
 
-HIDDEN_SIZE = 32
+HIDDEN_SIZE = 16
 
 class MLP(torch.nn.Module):
     def __init__(self):
@@ -165,3 +165,65 @@ model = MLP()
 get_valid_loss(model, True)
 
 
+#%% entrainement du MLP
+LEARNING_RATE = 5e-3
+EPOCHS = 5000
+
+optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)
+train_losses, valid_losses = [], [] # for each epoch
+train_scores, valid_scores = [], []
+lr = LEARNING_RATE
+for epoch in range(EPOCHS):
+    # entrainement
+    losses, scores = [], []
+    for x, y in train_loader:
+        # evaluer fonction cout
+        y_predict = model(x)
+        loss = F.cross_entropy(y_predict, y)
+        losses.append(loss.item())
+        scores.append(get_score(y, y_predict)[-1])
+
+        # mise à jour paramètre
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    train_loss = np.mean(losses)
+    train_losses.append(train_loss)
+    train_score = np.mean(scores)
+    train_scores.append(train_score)
+    
+    # vaidation
+    valid_loss, valid_score = get_valid_loss(model)
+    valid_losses.append(valid_loss)
+    valid_scores.append(valid_score)
+    
+    # afficher progression
+    if epoch % 10 == 0:
+      print('epoch %i train %.2e %.2f  valid %.2e %.2f' % 
+            (epoch, train_loss, train_score, valid_loss, valid_score))
+     
+    # if epoch > 0 and epoch % 250 == 0:
+    #     lr /= 2
+    #     print("decrease lr %.2e" % lr)
+    #     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+
+
+# visualiser progression loss (train vs valid)
+plt.plot(train_scores)
+plt.plot(valid_scores)
+plt.legend(['train score', 'valid score'])
+plt.xlabel('epoch')
+plt.show()
+
+plt.semilogy(train_losses)
+plt.semilogy(valid_losses)
+plt.legend(['train loss', 'valid loss'])
+plt.xlabel('epoch')
+plt.show()
+
+#%% utilisation
+index = np.random.randint(0, len(valid_data))
+x, y = valid_data[index]
+y_predict = model(x)
+class_predict = y_predict.argmax()
+print("x %s y %i predict %i" % (x, y.item(), class_predict.item()))
