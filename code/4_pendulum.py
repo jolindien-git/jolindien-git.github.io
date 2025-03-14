@@ -12,12 +12,11 @@ class Pendulum_Dataset(Dataset):
     min_speed = -max_speed
     
     def __init__(self, sequences_number = 1, sequences_length = 40):
+        # paramètres du pendule
         self.m = 1.0
-        # self.l = 1.0
+        self.l = np.random.uniform(.5, 3, sequences_number)
         
         # conditions initiales
-        self.l = np.random.uniform(.5, 3, sequences_number)
-        # self.m = np.random.uniform(1, 1, sequences_number)
         theta = np.random.uniform(np.pi / 2, 3 * np.pi / 2, sequences_number)
         speed = np.random.uniform(self.min_speed, self.max_speed, sequences_number)
         
