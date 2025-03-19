@@ -86,7 +86,7 @@ test_data = Pendulum_Dataset(sequences_number=N_SEQUENCES_VALID,
 
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 valid_loader = DataLoader(valid_data, batch_size=len(valid_data))
-test_loader = DataLoader(valid_data, batch_size=len(valid_data))
+test_loader = DataLoader(valid_data, batch_size=len(test_data))
 
 
 # %% Elman
