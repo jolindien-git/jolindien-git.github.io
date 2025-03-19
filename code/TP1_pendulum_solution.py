@@ -62,7 +62,12 @@ dataset = Pendulum_Dataset(sequences_number=100, random_seed=42)
 times_in, thetas_in, times_out, thetas_out = dataset[0]
 
 #------------------- A FAIRE: tracer une trajectoire
-
+plt.plot(times_in, thetas_in, '-*')
+plt.plot(times_out, thetas_out, '-*')
+plt.legend(['input', 'output'])
+plt.ylabel("angle")
+plt.xlabel("time")
+plt.show()
 #-------------------
 
 
@@ -88,9 +93,9 @@ test_loader = DataLoader(valid_data, batch_size=len(valid_data))
 
 # hyperparamètres
 #------------- A MODIFIER
-HIDDEN_SIZE = 1
-LEARNING_RATE = 1
-EPOCHS = 2
+HIDDEN_SIZE = 100
+LEARNING_RATE = 2e-3
+EPOCHS = 500
 #-------------
 
 class Elman_RNN(torch.nn.Module):
@@ -136,7 +141,33 @@ model_RNN = Elman_RNN()
 optimizer = torch.optim.Adam(model_RNN.parameters(), lr=LEARNING_RATE)
 train_losses, valid_losses = [], []
 #---------------- A FAIRE: boucle d'entrainement
+for epoch in range(EPOCHS):
+    losses = []
+    for _, thetas_in, _, thetas_out in train_loader:
+        # evaluer fonction cout
+        thetas_predict = model_RNN(thetas_in)
+        loss = ((thetas_predict - thetas_out)**2).mean()
+        losses.append(loss.item())
 
+        # mise à jour paramètre
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    train_loss = np.mean(losses)
+    train_losses.append(train_loss)
+    # vaidation
+    with torch.no_grad():
+        # evaluer fonction cout
+        for times_in, thetas_in, times_out, thetas_out in train_loader:
+            thetas_predict = model_RNN(thetas_in)
+            valid_loss = ((thetas_predict - thetas_out)**2).mean().item()
+    valid_losses.append(valid_loss)
+    if epoch < 10 or epoch % 10 == 0:
+      print('epoch %i train %.2e  valid %.2e' % (epoch, train_loss, valid_loss))
+    
+    if epoch == EPOCHS // 2:
+        print("decrease LR")
+        optimizer = torch.optim.Adam(model_RNN.parameters(), lr=LEARNING_RATE/10)
 #---------------- 
 
 # tracer les courbes de progression train/valid 
@@ -150,6 +181,17 @@ plt.xlabel("epochs")
 
 #%% tracer une courbe prédite
 #--------------- A FAIRE : 
+plt.figure()
+times_in, thetas_in, times_out, thetas_out = test_data[0]
+plt.plot(times_in, thetas_in, 'b-*', times_out, thetas_out, 'b-*')
+with torch.no_grad():
+    thetas_predict = model_RNN(torch.from_numpy(thetas_in).unsqueeze(0))
+thetas_predict = thetas_predict.squeeze(0).numpy()
+plt.plot(times_out, thetas_predict, 'r--*')
+plt.legend(['thruth', 'truth', 'predict'])
+plt.ylabel("angle")
+plt.xlabel("time")
+plt.show()
 #---------------
 
 
@@ -157,9 +199,9 @@ plt.xlabel("epochs")
 
 # hyperparamètres
 #------------- MODIFIER
-HIDDEN_SIZE = 1
-LEARNING_RATE = 1
-EPOCHS = 2
+HIDDEN_SIZE = 100
+LEARNING_RATE = 2e-3
+EPOCHS = 500
 #-------------
 
 class MLP(torch.nn.Module):
@@ -185,7 +227,32 @@ model_MLP = MLP()
 optimizer = torch.optim.Adam(model_MLP.parameters(), lr=LEARNING_RATE)
 train_losses, valid_losses = [], []
 #---------------- COMPLETER
+for epoch in range(EPOCHS):
+    losses = []
+    for _, thetas_in, _, thetas_out in train_loader:
+        # evaluer fonction cout
+        thetas_predict = model_MLP(thetas_in)
+        loss = ((thetas_predict - thetas_out)**2).mean()
+        losses.append(loss.item())
 
+        # mise à jour paramètre
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    train_loss = np.mean(losses)
+    train_losses.append(train_loss)
+    # vaidation
+    with torch.no_grad():
+        # evaluer fonction cout
+        for times_in, thetas_in, times_out, thetas_out in train_loader:
+            thetas_predict = model_MLP(thetas_in)
+            valid_loss = ((thetas_predict - thetas_out)**2).mean().item()
+    valid_losses.append(valid_loss)
+    if epoch < 10 or epoch % 10 == 0:
+      print('epoch %i train %.2e  valid %.2e' % (epoch, train_loss, valid_loss))
+    if epoch == EPOCHS // 2:
+        print("decrease LR")
+        optimizer = torch.optim.Adam(model_RNN.parameters(), lr=LEARNING_RATE/10)
 #---------------- 
 
 # tracer les courbes de progression train/valid 
@@ -194,3 +261,40 @@ plt.semilogy(valid_losses)
 plt.legend(['train loss', 'valid loss'])
 plt.xlabel("epochs")
 
+
+# %% LSTM
+
+# hyperparamètres
+#------------- A MODIFIER
+HIDDEN_SIZE = 100
+LEARNING_RATE = 2e-3
+EPOCHS = 500
+#-------------
+
+class Model_LSTM(torch.nn.Module):
+    
+    def __init__(self):
+        super().__init__()
+        self.i2h = torch.nn.Linear(1 + HIDDEN_SIZE, HIDDEN_SIZE)
+        self.h2o = torch.nn.Linear(HIDDEN_SIZE, 1)
+        self.cell = torch.nn.LSTMCell(1, HIDDEN_SIZE)
+
+    def forward(self, x): # x: shape(batch_size, sequence_length, 1)
+        batch_size = x.shape[0]
+        assert x.shape[1] == SEQ_LEN_IN
+        # init états cachés
+        hidden = torch.zeros(batch_size, HIDDEN_SIZE)
+        cell_state = torch.zeros(batch_size, HIDDEN_SIZE)
+        # time-step loop on inputs
+        for i in range(SEQ_LEN_IN):
+            hidden, cell_state = self.cell(x[:, i, :], (hidden, cell_state))
+        # time-step loop on outputs
+        ys = []
+        ys.append(self.h2o(hidden))
+        for i in range(SEQ_LEN_OUT - 1):
+            hidden, cell_state = self.cell(ys[i], (hidden, cell_state))
+            ys.append(self.h2o(hidden))
+        return torch.stack(ys, dim=1)
+
+
+model_LSTM = Model_LSTM()
